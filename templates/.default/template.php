@@ -1,57 +1,74 @@
 <?php if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die(); ?>
 
 <script type="text/javascript" id="google_ecommerce">
-    var bxEcommerce = {
+    var BxEcommerce = function () {
         /**
+         * Парсинг размеченных для ecommerce контейнеров
+         *
          * @param containers
          */
-        "parse" : function (containers) {
+        this.parse = function (containers) {
             containers = containers || document.querySelectorAll('[data-etype]');
-                var data = { "ecommerce" : { "detail" : [], "impressions" : [] } },
-                    impressionsProducts = data.ecommerce.impressions,
-                    detailProducts = data.ecommerce.detail,
-                    product = {};
+
+            if (typeof containers === 'object' && containers.length === 0) return;
+
+            var data = { "ecommerce" : {} }, product = {}, obj = this;
 
             Array.prototype.forEach.call(containers, function (container) {
                 var type = container.getAttribute('data-etype');
-                console.log(type);
+
                 switch (type) {
                     case 'detail':
-                            product = this.getProductData(container);
+                        var detailProducts = data.ecommerce.detail = data.ecommerce.detail || [];
 
-                        if (!this.hasProduct(detailProducts, product)) {
-                            detailProducts.push();
-                        }
+                        product = obj.getItemProductData(container);
+
+                        if (!hasProduct(detailProducts, product)) { detailProducts.push(product); }
                         break;
 
                     case 'impressions':
-                        var position = impressionsProducts[impressionsProducts.length - 1].position,
-                            product = this.getProductData(container, position + 1);
+                        var impressionsProducts = data.ecommerce.impressions = data.ecommerce.impressions || [],
+                            position = (impressionsProducts.length > 0) ? impressionsProducts[impressionsProducts.length - 1].position + 1 : 0;
 
-                        if (!this.hasProduct(impressionsProducts, product)) {
-                            impressionsProducts.push(product);
-                        }
+                        product = obj.getItemProductData(container, position);
+
+                        if (!hasProduct(impressionsProducts, product)) { impressionsProducts.push(product); }
+
+                        break;
+                    case 'checkout':
+                        data.event = 'checkout';
+                        data.ecommerce.checkout = data.ecommerce.checkout || { "actionField" : { "step" : 1 } };
+
+                        var checkoutProducts = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [],
+                            position = (checkoutProducts.length > 0) ? checkoutProducts[checkoutProducts.length - 1].position + 1 : 0;
+
+                        product = obj.getCheckoutProductData(container, position);
+
+                        if (!hasProduct(checkoutProducts, product)) { checkoutProducts.push(product); }
+
+                        break;
+
+                    case 'checkoutOption':
+
+                        break;
+
+                    case 'transaction':
+
                         break;
                 }
             });
-            console.log(impressionsProducts);
-            if (impressionsProducts.length > 0) {
-                data.ecommerce.impressions = { "products" : impressionsProducts };
-            }
-            console.log(detailProducts);
-            if (detailProducts.length > 0) {
-                data.ecommerce.detail = { "products" : detailProducts };
-            }
 
-            console.log(data);
-        },
+            sendData(dataLayer, data);
+        };
 
         /**
+         * Выборка данных из контейнера товара
+         *
          * @param container
          * @param position
          * @returns {{position: *|number}}
          */
-        "getProductData" : function (container, position) {
+        this.getItemProductData = function (container, position) {
             position = position || 0;
 
             var product = { "position" : position },
@@ -70,53 +87,83 @@
             }
 
             return product;
-        },
+        };
+
+        /**
+         * Выборка данных из контейнера корзины
+         *
+         * @param container
+         * @param position
+         * @returns {{position: *|number}}
+         */
+        this.getCheckoutProductData = function (container, position) {
+            position = position || 0;
+
+            var product = { "position" : position },
+                productTpl = {
+                    "id" : "",
+                    "name" : "",
+                    "price" : "",
+                    "brand" : "",
+                    "category" : "",
+                    "variant": "",
+                    "dimension1": "",
+                    "quantity": 0
+                };
+
+            for (var label in productTpl) {
+                if (label.length > 0) {
+                    product[label] = container.querySelector('[data-eproduct=' + label + ']').value;
+                }
+            }
+
+            return product;
+        };
 
         /**
          * @param arr
          * @param obj
          * @returns {boolean}
          */
-        "hasProduct" : function (arr, obj) {
+        function hasProduct(arr, obj) {
             for (i in arr) {
-                if (this.isEqual(arr[i], obj)) {
+                var obj1 = Object.assign({}, arr[i]),
+                    obj2 = Object.assign({}, obj);
+                obj1.position = obj2.position = 0;
+
+                if (isEqual(obj1, obj2)) {
                     return true;
                 }
             }
 
             return false;
-        },
+        }
 
         /**
          * @param object1
          * @param object2
          * @returns {boolean}
          */
-        "isEqual" : function (object1, object2) {
+        function isEqual(object1, object2) {
             if (typeof object1 === 'object' && typeof object2 === 'object') {
                 return JSON.stringify(object1) === JSON.stringify(object2);
             }
 
             return false;
         }
-    };
 
-    // Устанавливаем событие на загрузку страницы
-    document.addEventListener('DOMContentLoaded', function () {
-        bxEcommerce.parse();
-
-        // Устанавливаем событие на изменение страницы
-        document.body.addEventListener("DOMNodeInserted",function(e) {
-            console.log('changes');
-            clearTimeout(window.ecommerceTimer);
-            var containrers = document.querySelectorAll('[data-etype]');
-
-            if (containrers.length > 0) {
-                window.ecommerceTimer = setTimeout(function () {
-                    console.log('страница изменена');
-                    bxEcommerce.parse(containrers);
-                }, 1000);
+        /**
+         * @param arr
+         * @param data
+         */
+        function sendData(arr, data) {
+            for (i in arr) {
+                if (arr[i].ecommerce !== undefined) {
+                    arr.splice(i, 1);
+                }
             }
-        }, false);
-    });
+
+            arr.push(data);
+        }
+    };
 </script>
