@@ -27,38 +27,53 @@
                         break;
 
                     case 'impressions':
-                        var impressionsProducts = data.ecommerce.impressions = data.ecommerce.impressions || [],
-                            position = (impressionsProducts.length > 0) ? impressionsProducts[impressionsProducts.length - 1].position + 1 : 0;
+                        var impressionsProducts = data.ecommerce.impressions = data.ecommerce.impressions || [];
 
-                        product = obj.getItemProductData(container, position);
+                        product = obj.getItemProductData(container, getPosition(impressionsProducts));
 
                         if (!hasProduct(impressionsProducts, product)) { impressionsProducts.push(product); }
-
                         break;
+
                     case 'checkout':
                         data.event = 'checkout';
                         data.ecommerce.checkout = data.ecommerce.checkout || { "actionField" : { "step" : 1 } };
+                        var checkoutProducts = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [];
 
-                        var checkoutProducts = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [],
-                            position = (checkoutProducts.length > 0) ? checkoutProducts[checkoutProducts.length - 1].position + 1 : 0;
-
-                        product = obj.getCheckoutProductData(container, position);
+                        product = obj.getCheckoutProductData(container, getPosition(checkoutProducts));
 
                         if (!hasProduct(checkoutProducts, product)) { checkoutProducts.push(product); }
-
                         break;
 
                     case 'checkoutOption':
+                        data.event = 'checkoutOption';
+                        data.ecommerce.checkout_option = data.ecommerce.checkout_option || { "actionField" : { "step" : 2 } };
+
+                        var options = obj.getCheckoutOptionData(container);
+
+                        for (label in options) { data.ecommerce.checkout_option.actionField[label] = options[label]; }
+                        break;
+
+                    case 'transactionOrder':
+                        data.event = 'transaction';
+                        data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
+
+                        data.ecommerce.purchase.actionField = obj.getTransactionOrderData(container);
 
                         break;
 
-                    case 'transaction':
+                    case 'transactionProduct':
+                        data.event = 'transaction';
+                        data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
+                        var transactionProducts = data.ecommerce.purchase.products;
 
+                        product = obj.getTransactionProductData(container, getPosition(impressionsProducts));
+
+                        if (!hasProduct(transactionProducts, product)) { transactionProducts.push(product); }
                         break;
                 }
             });
 
-            sendData(dataLayer, data);
+            sendData(data);
         };
 
         /**
@@ -80,11 +95,7 @@
                     "category" : ""
                 };
 
-            for (var label in productTpl) {
-                if (label.length > 0) {
-                    product[label] = container.querySelector('[data-eproduct=' + label + ']').value;
-                }
-            }
+            product = Object.assign(product, fillObjectByTemplate(productTpl, container));
 
             return product;
         };
@@ -111,16 +122,123 @@
                     "quantity": 0
                 };
 
-            for (var label in productTpl) {
-                if (label.length > 0) {
-                    product[label] = container.querySelector('[data-eproduct=' + label + ']').value;
-                }
-            }
+            product = Object.assign(product, fillObjectByTemplate(productTpl, container));
 
             return product;
         };
 
         /**
+         * Выборка данных из контейнера доставки и оплаты
+         *
+         * @param container
+         * @returns {{position: *|number}}
+         */
+        this.getCheckoutOptionData = function (container) {
+            var optionsTpl = {
+                    "option" : "",
+                    "option2" : ""
+                };
+
+            return fillObjectByTemplate(optionsTpl, container);
+        };
+
+        /**
+         * Выборка данных о заказе из контейнера информации о заказе
+         *
+         * @param container
+         * @returns {{position: *|number}}
+         */
+        this.getTransactionOrderData = function (container) {
+            var orderTpl = {
+                    "id" : "",
+                    "affiliation" : "",
+                    "revenue" : "",
+                    "tax" : "",
+                    "shipping" : "",
+                    "coupon" : ""
+                };
+
+            return fillObjectByTemplate(orderTpl, container);
+        };
+
+        /**
+         * Выборка данных о товаре из контейнера информации о заказе
+         *
+         * @param container
+         * @param position
+         * @returns {{position: *|number}}
+         */
+        this.getTransactionProductData = function (container, position) {
+            position = position || 0;
+
+            var product = { "position" : position },
+                productTpl = {
+                    "id" : "",
+                    "name" : "",
+                    "price" : "",
+                    "brand" : "",
+                    "category" : "",
+                    "variant": "",
+                    "dimension1": "",
+                    "quantity": 0
+                };
+
+            product = Object.assign(product, fillObjectByTemplate(productTpl, container));
+
+            return product;
+        };
+
+        /**
+         * Заполняет объект, делая выборку по объекту-шаблону
+         *
+         * @param template
+         * @param container
+         * @return Object
+         */
+        function fillObjectByTemplate(template, container) {
+            template = template || {};
+
+            var resultObject = {};
+
+            if (template.length === 0) return resultObject;
+
+            for (var label in template) {
+                if (label.length > 0) {
+                    var item = container.querySelector('[data-eproduct=' + label + ']');
+
+                    if (item !== null) {
+                        resultObject[label] = item.value;
+                    }
+                }
+            }
+
+            return resultObject;
+        }
+
+        /**
+         * Наличие объекта в массиве
+         *
+         * @param arr
+         * @param obj
+         * @returns {boolean}
+         */
+        function hasObject(arr, obj) {
+            for (i in arr) {
+                var obj1 = Object.assign({}, arr[i]),
+                    obj2 = Object.assign({}, obj);
+                delete obj1['gtm.uniqueEventId'];
+
+                if (isEqual(obj1, obj2)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Наличие товара в массиве
+         *
          * @param arr
          * @param obj
          * @returns {boolean}
@@ -140,6 +258,8 @@
         }
 
         /**
+         * Сравнение 2-х объектов
+         *
          * @param object1
          * @param object2
          * @returns {boolean}
@@ -153,17 +273,42 @@
         }
 
         /**
-         * @param arr
-         * @param data
+         * Возвращает позицию следующего товара
+         *
+         * @param products
+         * @returns {number}
          */
-        function sendData(arr, data) {
-            for (i in arr) {
-                if (arr[i].ecommerce !== undefined) {
-                    arr.splice(i, 1);
+        function getPosition(products) {
+            products = products || [];
+            var position = 0;
+
+            if (typeof products === 'object' && products.length === 0) {
+                return position;
+            }
+
+            return (products.length > 0) ? products[products.length - 1].position + 1 : 0;
+        }
+
+        /**
+         * Отправка данных в массив dataLayer
+         *
+         * @param data
+         * @param clearOld
+         */
+        function sendData(data, clearOld) {
+            clearOld = clearOld || false;
+            var arr = dataLayer;
+
+            if (clearOld === true) {
+                for (i in arr) {
+                    if (arr[i].ecommerce !== undefined) {
+                        arr.splice(i, 1);
+                    }
                 }
             }
 
-            arr.push(data);
+            // Если отакого объекта нет в массиве
+            if (!hasObject(arr, data)) { arr.push(data); }
         }
     };
 </script>
