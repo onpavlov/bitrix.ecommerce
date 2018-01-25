@@ -31,7 +31,10 @@
 
                         product = obj.getItemProductData(container, getPosition(impressionsProducts));
 
-                        if (!hasProduct(impressionsProducts, product)) { impressionsProducts.push(product); }
+                        if (!hasProduct(impressionsProducts, product)) {
+                            obj.attachEvents(container, product);
+                            impressionsProducts.push(product);
+                        }
                         break;
 
                     case 'checkout':
@@ -41,7 +44,10 @@
 
                         product = obj.getCheckoutProductData(container, getPosition(checkoutProducts));
 
-                        if (!hasProduct(checkoutProducts, product)) { checkoutProducts.push(product); }
+                        if (!hasProduct(checkoutProducts, product)) {
+                            obj.attachEvents(container, product);
+                            checkoutProducts.push(product);
+                        }
                         break;
 
                     case 'checkoutOption':
@@ -74,6 +80,63 @@
             });
 
             sendData(data);
+        };
+
+        this.tools = {
+            "addEvent" : function (evt, container, selector, func) {
+                Array.prototype.forEach.call(container.querySelectorAll(selector), function (item) {
+                    item[evt + selector] = item[evt + selector] || func;
+                    item.removeEventListener('click', item[evt + selector]);
+                    item.addEventListener('click', item[evt + selector], false);
+                });
+            }
+        };
+
+        this.events = {
+            "productClick" : function (product) {
+                product = product || {};
+                var data = {
+                    "event" : "productClick",
+                    "ecommerce" : {
+                        "click" : {
+                            "actionField" : {
+                                "list" : "homepahe"
+                            },
+                            "products" : [product]
+                        }
+                    }
+                };
+
+                sendData(data);
+            },
+            "addToCart" : function (product) {
+                product = product || {};
+                var data = {
+                    "event" : "addToCart",
+                    "ecommerce" : {
+                        "currencyCode" : "RUB", // @todo cделать выбор валюты
+                        "add" : {
+                            "products" : [product] // @todo добавить элементы product variants
+                        }
+                    }
+                };
+
+                sendData(data);
+            },
+            "removeFromCart" : function (product) {console.log('removeFromCart');
+                product = product || {};
+                var data = {
+                    "event" : "removeFromCart",
+                    "ecommerce" : {
+                        "currencyCode" : "RUB",
+                        "remove" : {
+                            "products" : [product]
+                        }
+                    }
+                };
+
+                sendData(data);
+            }
         };
 
         /**
@@ -186,6 +249,46 @@
             product = Object.assign(product, fillObjectByTemplate(productTpl, container));
 
             return product;
+        };
+
+        /**
+         * Добавляет события к элементам
+         *
+         * @param container
+         * @param product
+         */
+        this.attachEvents = function(container, product) {
+            var parent = this,
+                selectors = {
+                    "detail" : {"event" : "click", "selector" : "[data-eproduct-event=detail]"},
+                    "buy" : {"event" : "click", "selector" : "[data-eproduct-event=buy]"},
+                    "removeFromCart" : {"event" : "click", "selector" : "[data-eproduct-event=remove_cart]"}
+                };
+
+            for (s in selectors) {
+                switch (s) {
+                    case 'detail':
+                        this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
+                            e.preventDefault(); // @todo убрать
+                            parent.events.productClick(product);
+                        });
+                        break;
+
+                    case 'buy':
+                        this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
+                            e.preventDefault(); // @todo убрать
+                            parent.events.addToCart(product);
+                        });
+                        break;
+
+                    case 'removeFromCart':
+                        this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
+                            e.preventDefault(); // @todo убрать
+                            parent.events.removeFromCart(product);
+                        });
+                        break;
+                }
+            }
         };
 
         /**
