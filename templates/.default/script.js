@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (containrers.length > 0) {
             window.ecommerceTimer = setTimeout(function () {
-                console.log('страница изменена');
                 ecommerce.parse();
             }, 1000);
         }

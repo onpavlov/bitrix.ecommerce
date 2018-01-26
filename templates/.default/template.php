@@ -21,18 +21,21 @@
                     case 'detail':
                         var detailProducts = data.ecommerce.detail = data.ecommerce.detail || [];
 
-                        product = obj.getItemProductData(container);
+                        product = obj.getProductData(container);
 
-                        if (!hasProduct(detailProducts, product)) { detailProducts.push(product); }
+                        if (!hasProduct(detailProducts, product)) {
+                            obj.attachEvents(container, product);
+                            detailProducts.push(product);
+                        }
                         break;
 
                     case 'impressions':
                         var impressionsProducts = data.ecommerce.impressions = data.ecommerce.impressions || [];
 
-                        product = obj.getItemProductData(container, getPosition(impressionsProducts));
+                        product = obj.getProductData(container, getPosition(impressionsProducts));
 
                         if (!hasProduct(impressionsProducts, product)) {
-                            obj.attachEvents(container, product);
+                            obj.attachEvents(container);
                             impressionsProducts.push(product);
                         }
                         break;
@@ -42,10 +45,10 @@
                         data.ecommerce.checkout = data.ecommerce.checkout || { "actionField" : { "step" : 1 } };
                         var checkoutProducts = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [];
 
-                        product = obj.getCheckoutProductData(container, getPosition(checkoutProducts));
+                        product = obj.getProductDataFull(container, getPosition(checkoutProducts));
 
                         if (!hasProduct(checkoutProducts, product)) {
-                            obj.attachEvents(container, product);
+                            obj.attachEvents(container);
                             checkoutProducts.push(product);
                         }
                         break;
@@ -74,7 +77,10 @@
 
                         product = obj.getTransactionProductData(container, getPosition(impressionsProducts));
 
-                        if (!hasProduct(transactionProducts, product)) { transactionProducts.push(product); }
+                        if (!hasProduct(transactionProducts, product)) {
+                            obj.attachEvents(container);
+                            transactionProducts.push(product);
+                        }
                         break;
                 }
             });
@@ -93,7 +99,7 @@
         };
 
         this.events = {
-            "productClick" : function (product) {
+            "productClick" : function (product) {console.log('productClick');
                 product = product || {};
                 var data = {
                     "event" : "productClick",
@@ -109,14 +115,14 @@
 
                 sendData(data);
             },
-            "addToCart" : function (product) {
+            "addToCart" : function (product) {console.log('addToCart');
                 product = product || {};
                 var data = {
                     "event" : "addToCart",
                     "ecommerce" : {
                         "currencyCode" : "RUB", // @todo cделать выбор валюты
                         "add" : {
-                            "products" : [product] // @todo добавить элементы product variants
+                            "products" : [product]
                         }
                     }
                 };
@@ -146,7 +152,7 @@
          * @param position
          * @returns {{position: *|number}}
          */
-        this.getItemProductData = function (container, position) {
+        this.getProductData = function (container, position) {
             position = position || 0;
 
             var product = { "position" : position },
@@ -170,7 +176,7 @@
          * @param position
          * @returns {{position: *|number}}
          */
-        this.getCheckoutProductData = function (container, position) {
+        this.getProductDataFull = function (container, position) {
             position = position || 0;
 
             var product = { "position" : position },
@@ -255,9 +261,8 @@
          * Добавляет события к элементам
          *
          * @param container
-         * @param product
          */
-        this.attachEvents = function(container, product) {
+        this.attachEvents = function(container) {
             var parent = this,
                 selectors = {
                     "detail" : {"event" : "click", "selector" : "[data-eproduct-event=detail]"},
@@ -269,22 +274,19 @@
                 switch (s) {
                     case 'detail':
                         this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                            e.preventDefault(); // @todo убрать
-                            parent.events.productClick(product);
+                            parent.events.productClick(parent.getProductData(container));
                         });
                         break;
 
                     case 'buy':
                         this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                            e.preventDefault(); // @todo убрать
-                            parent.events.addToCart(product);
+                            parent.events.addToCart(parent.getProductDataFull(container));
                         });
                         break;
 
                     case 'removeFromCart':
                         this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                            e.preventDefault(); // @todo убрать
-                            parent.events.removeFromCart(product);
+                            parent.events.removeFromCart(parent.getProductDataFull(container));
                         });
                         break;
                 }
