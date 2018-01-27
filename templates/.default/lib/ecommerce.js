@@ -57,10 +57,9 @@ var BxEcommerce = function () {
                     break;
             }
 
-            if (productsSet.length > 0
-                && Object.getOwnPropertyNames(product).length
+            if (Object.getOwnPropertyNames(product).length
                 && !hasProduct(productsSet, product)
-            ) {
+            ) {console.log('tet');
                 obj.attachEvents(container);
                 productsSet.push(product);
             }
@@ -80,7 +79,7 @@ var BxEcommerce = function () {
     };
 
     this.events = {
-        "productClick" : function (product) {console.log('productClick');
+        "productClick" : function (product) {
             product = product || {};
             var data = {
                 "event" : "productClick",
@@ -96,7 +95,7 @@ var BxEcommerce = function () {
 
             sendData(data);
         },
-        "addToCart" : function (product) {console.log('addToCart');
+        "addToCart" : function (product) {
             product = product || {};
             var data = {
                 "event" : "addToCart",
@@ -110,7 +109,7 @@ var BxEcommerce = function () {
 
             sendData(data);
         },
-        "removeFromCart" : function (product) {console.log('removeFromCart');
+        "removeFromCart" : function (product) {
             product = product || {};
             var data = {
                 "event" : "removeFromCart",
