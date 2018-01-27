@@ -59,7 +59,7 @@ var BxEcommerce = function () {
 
             if (Object.getOwnPropertyNames(product).length
                 && !hasProduct(productsSet, product)
-            ) {console.log('tet');
+            ) {
                 obj.attachEvents(container);
                 productsSet.push(product);
             }
