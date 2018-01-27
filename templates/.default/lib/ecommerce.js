@@ -9,45 +9,29 @@ var BxEcommerce = function () {
 
         if (typeof containers === 'object' && containers.length === 0) return;
 
-        var data = { "ecommerce" : {} }, product = {}, obj = this;
+        var data = { "ecommerce" : {} }, obj = this, productsSet = [];
 
         Array.prototype.forEach.call(containers, function (container) {
-            var type = container.getAttribute('data-etype');
+            var type = container.getAttribute('data-etype'),
+                product = {};
 
             switch (type) {
                 case 'detail':
-                    var detailProducts = data.ecommerce.detail = data.ecommerce.detail || [];
-
+                    productsSet = data.ecommerce.detail = data.ecommerce.detail || [];
                     product = obj.getProductData(container);
-
-                    if (!hasProduct(detailProducts, product)) {
-                        obj.attachEvents(container, product);
-                        detailProducts.push(product);
-                    }
                     break;
 
                 case 'impressions':
-                    var impressionsProducts = data.ecommerce.impressions = data.ecommerce.impressions || [];
-
-                    product = obj.getProductData(container, getPosition(impressionsProducts));
-
-                    if (!hasProduct(impressionsProducts, product)) {
-                        obj.attachEvents(container);
-                        impressionsProducts.push(product);
-                    }
+                    data.ecommerce.currencyCode = 'RUB'; // @todo cделать выбор валюты
+                    productsSet = data.ecommerce.impressions = data.ecommerce.impressions || [];
+                    product = obj.getProductData(container, getPosition(productsSet));
                     break;
 
                 case 'checkout':
                     data.event = 'checkout';
                     data.ecommerce.checkout = data.ecommerce.checkout || { "actionField" : { "step" : 1 } };
-                    var checkoutProducts = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [];
-
-                    product = obj.getProductDataFull(container, getPosition(checkoutProducts));
-
-                    if (!hasProduct(checkoutProducts, product)) {
-                        obj.attachEvents(container);
-                        checkoutProducts.push(product);
-                    }
+                    productsSet = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [];
+                    product = obj.getProductDataFull(container, getPosition(productsSet));
                     break;
 
                 case 'checkoutOption':
@@ -62,23 +46,23 @@ var BxEcommerce = function () {
                 case 'transactionOrder':
                     data.event = 'transaction';
                     data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
-
                     data.ecommerce.purchase.actionField = obj.getTransactionOrderData(container);
-
                     break;
 
                 case 'transactionProduct':
                     data.event = 'transaction';
                     data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
-                    var transactionProducts = data.ecommerce.purchase.products;
-
-                    product = obj.getTransactionProductData(container, getPosition(impressionsProducts));
-
-                    if (!hasProduct(transactionProducts, product)) {
-                        obj.attachEvents(container);
-                        transactionProducts.push(product);
-                    }
+                    productsSet = data.ecommerce.purchase.products;
+                    product = obj.getTransactionProductData(container, getPosition(productsSet));
                     break;
+            }
+
+            if (productsSet.length > 0
+                && Object.getOwnPropertyNames(product).length
+                && !hasProduct(productsSet, product)
+            ) {
+                obj.attachEvents(container);
+                productsSet.push(product);
             }
         });
 
@@ -330,7 +314,9 @@ var BxEcommerce = function () {
                 obj2 = Object.assign({}, obj);
             delete obj1['gtm.uniqueEventId'];
 
-            if (isEqual(obj1, obj2)) {
+            if (obj1.ecommerce !== undefined && obj2.ecommerce !== undefined
+                && isEqual(obj1, obj2)
+            ) {
                 return true;
             }
         }
