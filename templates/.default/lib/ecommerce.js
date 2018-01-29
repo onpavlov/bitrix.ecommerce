@@ -1,4 +1,6 @@
 var BxEcommerce = function () {
+    var obj = this;
+
     /**
      * Парсинг размеченных для ecommerce контейнеров
      *
@@ -9,7 +11,7 @@ var BxEcommerce = function () {
 
         if (typeof containers === 'object' && containers.length === 0) return;
 
-        var data = { "ecommerce" : {} }, obj = this, productsSet = [];
+        var data = { "ecommerce" : {} }, productsSet = [];
 
         Array.prototype.forEach.call(containers, function (container) {
             var type = container.getAttribute('data-etype'),
@@ -18,49 +20,49 @@ var BxEcommerce = function () {
             switch (type) {
                 case 'detail':
                     productsSet = data.ecommerce.detail = data.ecommerce.detail || [];
-                    product = obj.getProductData(container);
+                    product = obj.tools.getProductData(container);
                     break;
 
                 case 'impressions':
                     data.ecommerce.currencyCode = 'RUB'; // @todo cделать выбор валюты
                     productsSet = data.ecommerce.impressions = data.ecommerce.impressions || [];
-                    product = obj.getProductData(container, getPosition(productsSet));
+                    product = obj.tools.getProductData(container, getPosition(productsSet));
                     break;
 
                 case 'checkout':
                     data.event = 'checkout';
                     data.ecommerce.checkout = data.ecommerce.checkout || { "actionField" : { "step" : 1 } };
                     productsSet = data.ecommerce.checkout.products = data.ecommerce.checkout.products || [];
-                    product = obj.getProductDataFull(container, getPosition(productsSet));
+                    product = obj.tools.getProductDataFull(container, getPosition(productsSet));
                     break;
 
                 case 'checkoutOption':
                     data.event = 'checkoutOption';
                     data.ecommerce.checkout_option = data.ecommerce.checkout_option || { "actionField" : { "step" : 2 } };
 
-                    var options = obj.getCheckoutOptionData(container);
+                    var options = obj.tools.getCheckoutOptionData(container);
 
-                    for (label in options) { data.ecommerce.checkout_option.actionField[label] = options[label]; }
+                    for (var label in options) { data.ecommerce.checkout_option.actionField[label] = options[label]; }
                     break;
 
                 case 'transactionOrder':
                     data.event = 'transaction';
                     data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
-                    data.ecommerce.purchase.actionField = obj.getTransactionOrderData(container);
+                    data.ecommerce.purchase.actionField = obj.tools.getTransactionOrderData(container);
                     break;
 
                 case 'transactionProduct':
                     data.event = 'transaction';
                     data.ecommerce.purchase = data.ecommerce.purchase || { "actionField" : { }, "products" : [] };
                     productsSet = data.ecommerce.purchase.products;
-                    product = obj.getTransactionProductData(container, getPosition(productsSet));
+                    product = obj.tools.getProductDataFull(container, getPosition(productsSet));
                     break;
             }
 
             if (Object.getOwnPropertyNames(product).length
                 && !hasProduct(productsSet, product)
             ) {
-                obj.attachEvents(container);
+                obj.events.attachEvents(container);
                 productsSet.push(product);
             }
         });
@@ -69,16 +71,152 @@ var BxEcommerce = function () {
     };
 
     this.tools = {
+        /**
+         * Навешивает событие на элемент
+         *
+         * @param evt
+         * @param container
+         * @param selector
+         * @param func
+         */
         "addEvent" : function (evt, container, selector, func) {
             Array.prototype.forEach.call(container.querySelectorAll(selector), function (item) {
                 item[evt + selector] = item[evt + selector] || func;
                 item.removeEventListener('click', item[evt + selector]);
                 item.addEventListener('click', item[evt + selector], false);
             });
+        },
+
+        /**
+         * Выборка данных из контейнера товара
+         *
+         * @param container
+         * @param position
+         * @returns {{position: *|number}}
+         */
+        "getProductData" : function (container, position) {
+            position = position || 0;
+
+            var product = { "position" : position },
+                productTpl = {
+                    "id" : "",
+                    "name" : "",
+                    "price" : "",
+                    "brand" : "",
+                    "category" : ""
+                };
+
+            product = Object.assign(product, fillObjectByTemplate(productTpl, container));
+
+            return product;
+        },
+
+        /**
+         * Выборка данных из контейнера корзины
+         *
+         * @param container
+         * @param position
+         * @returns {{position: *|number}}
+         */
+        "getProductDataFull" : function (container, position) {
+            position = position || 0;
+
+            var product = { "position" : position },
+                productTpl = {
+                    "id" : "",
+                    "name" : "",
+                    "price" : "",
+                    "brand" : "",
+                    "category" : "",
+                    "variant": "",
+                    "dimension1": "",
+                    "quantity": 0
+                };
+
+            product = Object.assign(product, fillObjectByTemplate(productTpl, container));
+
+            return product;
+        },
+
+
+        /**
+         * Выборка данных из контейнера доставки и оплаты
+         *
+         * @param container
+         * @returns {{position: *|number}}
+         */
+        "getCheckoutOptionData" : function (container) {
+            var optionsTpl = {
+                "option" : "",
+                "option2" : ""
+            };
+
+            return fillObjectByTemplate(optionsTpl, container);
+        },
+
+        /**
+         * Выборка данных о заказе из контейнера информации о заказе
+         *
+         * @param container
+         * @returns {{position: *|number}}
+         */
+        "getTransactionOrderData" : function (container) {
+            var orderTpl = {
+                "id" : "",
+                "affiliation" : "",
+                "revenue" : "",
+                "tax" : "",
+                "shipping" : "",
+                "coupon" : ""
+            };
+
+            return fillObjectByTemplate(orderTpl, container);
         }
     };
 
     this.events = {
+        /**
+         * Добавляет события к элементам
+         *
+         * @param container
+         */
+        "attachEvents" : function(container) {
+            var parent = this,
+                selectors = {
+                    "detail" : {"event" : "click", "selector" : "[data-eproduct-event=detail]"},
+                    "buy" : {"event" : "click", "selector" : "[data-eproduct-event=buy]"},
+                    "removeFromCart" : {"event" : "click", "selector" : "[data-eproduct-event=remove_cart]"},
+                    "oneclick" : {"event" : "click", "selector" : "[data-eproduct-event=oneclick_buy]"}
+                };
+
+            for (var s in selectors) {
+                switch (s) {
+                    case 'detail':
+                        obj.tools.addEvent(selectors[s].event, container, selectors[s].selector, function () {
+                            parent.productClick(obj.tools.getProductData(container));
+                        });
+                        break;
+
+                    case 'buy':
+                        obj.tools.addEvent(selectors[s].event, container, selectors[s].selector, function () {
+                            parent.addToCart(obj.tools.getProductDataFull(container));
+                        });
+                        break;
+
+                    case 'removeFromCart':
+                        obj.tools.addEvent(selectors[s].event, container, selectors[s].selector, function () {
+                            parent.removeFromCart(obj.tools.getProductDataFull(container));
+                        });
+                        break;
+
+                    case 'oneclick':
+                        obj.tools.addEvent(selectors[s].event, container, selectors[s].selector, function () {
+                            parent.transactionOneClick(obj.tools.getTransactionOrderData(container), obj.tools.getProductDataFull(container));
+                        });
+                        break;
+                }
+            }
+        },
         "productClick" : function (product) {
             product = product || {};
             var data = {
@@ -122,154 +260,18 @@ var BxEcommerce = function () {
             };
 
             sendData(data);
-        }
-    };
-
-    /**
-     * Выборка данных из контейнера товара
-     *
-     * @param container
-     * @param position
-     * @returns {{position: *|number}}
-     */
-    this.getProductData = function (container, position) {
-        position = position || 0;
-
-        var product = { "position" : position },
-            productTpl = {
-                "id" : "",
-                "name" : "",
-                "price" : "",
-                "brand" : "",
-                "category" : ""
+        },
+        "transactionOneClick" : function (order, products) {
+            products = products || {};
+            var data = {
+                "event" : "transactionOneClick",
+                "ecommerce" : {
+                    "purchase" : order,
+                    "products" : [products]
+                }
             };
 
-        product = Object.assign(product, fillObjectByTemplate(productTpl, container));
-
-        return product;
-    };
-
-    /**
-     * Выборка данных из контейнера корзины
-     *
-     * @param container
-     * @param position
-     * @returns {{position: *|number}}
-     */
-    this.getProductDataFull = function (container, position) {
-        position = position || 0;
-
-        var product = { "position" : position },
-            productTpl = {
-                "id" : "",
-                "name" : "",
-                "price" : "",
-                "brand" : "",
-                "category" : "",
-                "variant": "",
-                "dimension1": "",
-                "quantity": 0
-            };
-
-        product = Object.assign(product, fillObjectByTemplate(productTpl, container));
-
-        return product;
-    };
-
-    /**
-     * Выборка данных из контейнера доставки и оплаты
-     *
-     * @param container
-     * @returns {{position: *|number}}
-     */
-    this.getCheckoutOptionData = function (container) {
-        var optionsTpl = {
-            "option" : "",
-            "option2" : ""
-        };
-
-        return fillObjectByTemplate(optionsTpl, container);
-    };
-
-    /**
-     * Выборка данных о заказе из контейнера информации о заказе
-     *
-     * @param container
-     * @returns {{position: *|number}}
-     */
-    this.getTransactionOrderData = function (container) {
-        var orderTpl = {
-            "id" : "",
-            "affiliation" : "",
-            "revenue" : "",
-            "tax" : "",
-            "shipping" : "",
-            "coupon" : ""
-        };
-
-        return fillObjectByTemplate(orderTpl, container);
-    };
-
-    /**
-     * Выборка данных о товаре из контейнера информации о заказе
-     *
-     * @param container
-     * @param position
-     * @returns {{position: *|number}}
-     */
-    this.getTransactionProductData = function (container, position) {
-        position = position || 0;
-
-        var product = { "position" : position },
-            productTpl = {
-                "id" : "",
-                "name" : "",
-                "price" : "",
-                "brand" : "",
-                "category" : "",
-                "variant": "",
-                "dimension1": "",
-                "quantity": 0
-            };
-
-        product = Object.assign(product, fillObjectByTemplate(productTpl, container));
-
-        return product;
-    };
-
-    /**
-     * Добавляет события к элементам
-     *
-     * @param container
-     */
-    this.attachEvents = function(container) {
-        var parent = this,
-            selectors = {
-                "detail" : {"event" : "click", "selector" : "[data-eproduct-event=detail]"},
-                "buy" : {"event" : "click", "selector" : "[data-eproduct-event=buy]"},
-                "removeFromCart" : {"event" : "click", "selector" : "[data-eproduct-event=remove_cart]"}
-            };
-
-        for (s in selectors) {
-            switch (s) {
-                case 'detail':
-                    this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                        parent.events.productClick(parent.getProductData(container));
-                    });
-                    break;
-
-                case 'buy':
-                    this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                        parent.events.addToCart(parent.getProductDataFull(container));
-                    });
-                    break;
-
-                case 'removeFromCart':
-                    this.tools.addEvent(selectors[s].event, container, selectors[s].selector, function (e) {
-                        parent.events.removeFromCart(parent.getProductDataFull(container));
-                    });
-                    break;
-            }
+            sendData(data);
         }
     };
 
@@ -308,7 +310,7 @@ var BxEcommerce = function () {
      * @returns {boolean}
      */
     function hasObject(arr, obj) {
-        for (i in arr) {
+        for (var i in arr) {
             var obj1 = Object.assign({}, arr[i]),
                 obj2 = Object.assign({}, obj);
             delete obj1['gtm.uniqueEventId'];
@@ -331,7 +333,7 @@ var BxEcommerce = function () {
      * @returns {boolean}
      */
     function hasProduct(arr, obj) {
-        for (i in arr) {
+        for (var i in arr) {
             var obj1 = Object.assign({}, arr[i]),
                 obj2 = Object.assign({}, obj);
             obj1.position = obj2.position = 0;
@@ -387,7 +389,7 @@ var BxEcommerce = function () {
         var arr = dataLayer;
 
         if (clearOld === true) {
-            for (i in arr) {
+            for (var i in arr) {
                 if (arr[i].ecommerce !== undefined) {
                     arr.splice(i, 1);
                 }
