@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (containrers.length > 0) {
             window.ecommerceTimer = setTimeout(function () {
-                ecommerce.parse();
+                ecommerce.parse(true);
             }, 1000);
         }
     }, false);

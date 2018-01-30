@@ -1,13 +1,14 @@
 var BxEcommerce = function () {
-    var obj = this;
+    var obj = this, pageChanged = false;
 
     /**
      * Парсинг размеченных для ecommerce контейнеров
      *
-     * @param containers
+     * @param pageChanged
      */
-    this.parse = function (containers) {
-        containers = containers || document.querySelectorAll('[data-etype]');
+    this.parse = function (pageChanged) {
+        obj.pageChanged = pageChanged || false;
+        var containers = document.querySelectorAll('[data-etype]');
 
         if (typeof containers === 'object' && containers.length === 0) return;
 
@@ -386,17 +387,21 @@ var BxEcommerce = function () {
      */
     function sendData(data, clearOld) {
         clearOld = clearOld || false;
-        var arr = dataLayer;
+        var jsPlace = document.getElementById('bx_ecommerce');
 
         if (clearOld === true) {
-            for (var i in arr) {
-                if (arr[i].ecommerce !== undefined) {
-                    arr.splice(i, 1);
+            for (var i in dataLayer) {
+                if (dataLayer[i].ecommerce !== undefined) {
+                    dataLayer.splice(i, 1);
                 }
             }
         }
 
         // Если отакого объекта нет в массиве
-        if (!hasObject(arr, data)) { arr.push(data); }
+        if (!hasObject(dataLayer, data)) {
+            window.dataLayer = (dataLayer || []);
+            if (obj.pageChanged) dataLayer.push(data);
+            jsPlace.innerText = 'dataLayer.push(' + JSON.stringify(data) + ');';
+        }
     }
 };
