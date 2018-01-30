@@ -402,7 +402,7 @@ var BxEcommerce = function () {
             var oldText = (data.event !== undefined && obj.events[data.event] !== undefined) ? jsPlace.innerText : '';
             window.dataLayer = (dataLayer || []);
             if (obj.pageChanged) dataLayer.push(data);
-            jsPlace.innerText = 'dataLayer.push(' + oldText + JSON.stringify(data) + ');';
+            jsPlace.innerText = oldText + 'dataLayer.push(' + JSON.stringify(data) + ');';
         }
     }
 };
