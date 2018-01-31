@@ -84,6 +84,7 @@
                 <? endif; ?>
             }
         });
+        <? require_once 'script.php'; ?>
     </script>
     <!--  END Code for component bitrix.ecommerce  -->
     <? if ($arParams['mode'] !== 'ajax') $this->EndViewTarget(); ?>
