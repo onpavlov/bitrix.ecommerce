@@ -113,6 +113,11 @@ class BitrixEcommerce extends CBitrixComponent
     {
         if (!empty($event)) {
             global $bxEcommerce;
+
+            if ($event === 'checkoutOption') {
+                $event = 'checkout';
+            }
+
             $bxEcommerce['event'] = $event;
         }
     }
