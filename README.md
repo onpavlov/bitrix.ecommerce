@@ -45,7 +45,7 @@ Google Tag Manager
         'quantity' => 1
     ])); ?>
     </script>
-    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <input type="hidden" name="eproduct_id" value="123">
     <? // END Code for component bitrix.ecommerce ?>
 ```
 
@@ -69,7 +69,7 @@ Google Tag Manager
         'quantity' => 1
     ])); ?>
     </script>
-    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <input type="hidden" name="eproduct_id" value="123">
     <? // END Code for component bitrix.ecommerce ?>
 ```
 
@@ -95,7 +95,7 @@ BitrixEcommerce::setEvent('checkout'); ?>
         'quantity' => 1
     ])); ?>
     </script>
-    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <input type="hidden" name="eproduct_id" value="123">
     <? // END Code for component bitrix.ecommerce ?>
 ```
 
@@ -142,7 +142,7 @@ BitrixEcommerce::setEvent('checkout'); ?>
         'quantity' => 1
     ])); ?>
     </script>
-    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <input type="hidden" name="eproduct_id" value="123">
     <? // END Code for component bitrix.ecommerce ?>
 ```
 
