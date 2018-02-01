@@ -105,9 +105,22 @@
                 }
             })
                 .on('click', '[data-eproduct-event=buy]', function(e) {
-                    var product = getProduct(this);
-                    console.log('buy');
+                    var product = getProduct(this),
+                        quantity = undefined,
+                        i = 0;
+
+                    // ищем поле со значением кол-ва добавляемого товара
+                    while (i < 10 && quantity === undefined) {
+                        quantity = $(this).parent().find('[data-eproduct=quantity]').val();
+                        elem = $(this).parent();
+                        i++;
+                    }
+
                     if (product !== false) {
+                        if (quantity !== undefined) {
+                            product['quantity'] = quantity;
+                        }
+
                         dataLayer.push({
                             "event" : "addToCart",
                             "ecommerce" : {
