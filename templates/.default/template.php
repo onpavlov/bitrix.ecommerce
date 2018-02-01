@@ -86,7 +86,7 @@
         });
         <? endif; ?>
         <? if ($arParams['mode'] !== 'top' && $arParams['mode'] !== 'ajax'): ?>
-        $(document).ready(function() {console.log('adding');
+        $(document).ready(function() {
             $('body').on('click', '[data-eproduct-event=detail]', function(e) {
                 var product = getProduct(this);
 
