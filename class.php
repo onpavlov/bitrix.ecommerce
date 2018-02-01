@@ -9,6 +9,11 @@ class BitrixEcommerce extends CBitrixComponent
     const DEFAULT_CURRENCY = 'RUB';
     const DEFAULT_SITE_ID = 's1';
 
+    const MODE_TOP = 'top';
+    const MODE_FOOTER = 'footer';
+    const MODE_AJAX = 'ajax';
+    const MODE_INIT = 'init';
+
     private $modules = ['currency'];
 
     public function onPrepareComponentParams($arParams)
@@ -26,7 +31,7 @@ class BitrixEcommerce extends CBitrixComponent
 
     public function executeComponent()
     {
-        if ($this->arParams['mode'] === 'init') { return; }
+        if ($this->arParams['mode'] === self::MODE_INIT) { return; }
 
         $this->arResult['common'] = [
             'currency' => $this->getCurrency(),
@@ -34,10 +39,10 @@ class BitrixEcommerce extends CBitrixComponent
         ];
         $this->arResult['ecommerce'] = $this->getData();
 
-        if (!empty($this->arResult['ecommerce'])) {
-            $this->includeComponentTemplate();
-        } else {
+        if ($this->arParams['mode'] === self::MODE_TOP) {
             $this->includeComponentTemplate('_empty');
+        } else {
+            $this->includeComponentTemplate();
         }
     }
 
