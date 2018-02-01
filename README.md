@@ -3,25 +3,50 @@ Bitrix компонент для внедрения кодов электрон�
 
 ### Настройка работы компонента
 
-Для корректной работы компонента необходимо разметить код на сайте 
-и передать туда все необходимые параметры.
+Для корректной работы компонента необходимо:
+
+* В файле шаблона header.php разместить код подключения компонента перед подключением скрипта 
+Google Tag Manager
+```PHP
+<? $APPLICATION->IncludeComponent('custom:bitrix.ecommerce', '', ['mode' => 'top']); ?>
+```
+* В файле шаблона footer.php разместить код подключения компонента
+```PHP
+<? $APPLICATION->IncludeComponent('custom:bitrix.ecommerce', '', []); ?>
+```
+* Далее разместить коды для передачи данных в компонент в зависимости от типа страницы, следуя 
+инструкцям ниже
+
+#### Важно:
+Если данные загружаются через AJAX, необходимо
+* в начале шаблона инициализировать компонент
+```PHP
+<? $APPLICATION->IncludeComponent('custom:bitrix.ecommerce', '', ['mode' => 'init']); ?>
+```
+* в конце шаблона подключить компонент для генерации кода
+```PHP
+<? $APPLICATION->IncludeComponent('custom:bitrix.ecommerce', '', ['mode' => 'ajax']); ?>
+```
 
 #### 1. Карточка товара (detail)
 
-* На странице карточки товара для контейнера, содержащего информацию 
-о товаре добавить data-атрибут **data-etype="detail"**
-* Внутрь контейнера поместить HTML-код и передать значения в аттрибут value
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <input type="hidden" data-eproduct="id" value="">
-    <input type="hidden" data-eproduct="name" value="">
-    <input type="hidden" data-eproduct="price" value="">
-    <input type="hidden" data-eproduct="category" value="">
-    <input type="hidden" data-eproduct="brand" value="">
-    <input type="hidden" data-eproduct="variant" value="">
-    <input type="hidden" data-eproduct="dimension1" value="">
-    <input type="hidden" data-eproduct="quantity" value="1">
-    <!--  END Code for component bitrix.ecommerce  -->
+* На странице карточки товара разместить код и передать в него параметры
+```PHP
+    <script type="text/javascript">
+    <? // START Code for component bitrix.ecommerce
+    echo BitrixEcommerce::addProduct('detail', new BxEcommerce\Product([
+        'id' => 123,
+        'name' => 'test',
+        'price' => 100.00,
+        'brand' => 1,
+        'category' => 2,
+        'variant' => 123,
+        'dimension1' => '',
+        'quantity' => 1
+    ])); ?>
+    </script>
+    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <? // END Code for component bitrix.ecommerce ?>
 ```
 
 #### 2. Сопутствующие товары (impressions)
@@ -29,101 +54,115 @@ Bitrix компонент для внедрения кодов электрон�
 Если на странице отображается список товаров (каталог товаров, просмотренные товары, рекомендуемые товары) - они 
 размечаются как сопутствующие товары (impressions).
 
-* На странице со списком товаров для **каждого** контейнера, содержащего информацию 
-о товаре добавить data-атрибут **data-etype="impressions"**
-* Внутрь контейнера поместить HTML-код и передать значения в аттрибут value
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <input type="hidden" data-eproduct="id" value="">
-    <input type="hidden" data-eproduct="name" value="">
-    <input type="hidden" data-eproduct="price" value="">
-    <input type="hidden" data-eproduct="category" value="">
-    <input type="hidden" data-eproduct="brand" value="">
-    <input type="hidden" data-eproduct="variant" value="">
-    <input type="hidden" data-eproduct="dimension1" value="">
-    <input type="hidden" data-eproduct="quantity" value="1">
-    <!--  END Code for component bitrix.ecommerce  -->
+* На странице со списком товаров для **каждого** товара разместить код и передать в него параметры
+```PHP
+    <script type="text/javascript">
+    <? // START Code for component bitrix.ecommerce
+    echo BitrixEcommerce::addProduct('impressions', new BxEcommerce\Product([
+        'id' => 123,
+        'name' => 'test',
+        'price' => 100.00,
+        'brand' => 1,
+        'category' => 2,
+        'variant' => 123,
+        'dimension1' => '',
+        'quantity' => 1
+    ])); ?>
+    </script>
+    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <? // END Code for component bitrix.ecommerce ?>
 ```
 
 #### 3. Корзина товаров (checkout)
 
-* На странице корзины товаров для **каждого** контейнера, содержащего информацию 
-о товаре добавить data-атрибут **data-etype="checkout"**
-* Внутрь контейнера поместить HTML-код и передать значения в аттрибут value
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <input type="hidden" data-eproduct="id" value="">
-    <input type="hidden" data-eproduct="name" value="">
-    <input type="hidden" data-eproduct="price" value="">
-    <input type="hidden" data-eproduct="category" value="">
-    <input type="hidden" data-eproduct="brand" value="">
-    <input type="hidden" data-eproduct="variant" value="">
-    <input type="hidden" data-eproduct="dimension1" value="">
-    <input type="hidden" data-eproduct="quantity" value=""> // может отсутствовать читай след. пункт
-    <!--  END Code for component bitrix.ecommerce  -->
+* На странице корзины товаров в шаблон добавить код 
+```PHP
+<? BitrixEcommerce::addOptions('checkout', ['step' => 1]);
+BitrixEcommerce::setEvent('checkout'); ?>
 ```
-* Если у товара уже есть input поле со значением количества товара в корзине, добавить ему 
-атрибут **data-eproduct="quantity"** 
+* В списке товаров для **каждого** товара разместить код и передать в него параметры
+```PHP
+    <script type="text/javascript">
+    <? // START Code for component bitrix.ecommerce
+    echo BitrixEcommerce::addProduct('impressions', new BxEcommerce\Product([
+        'id' => 123,
+        'name' => 'test',
+        'price' => 100.00,
+        'brand' => 1,
+        'category' => 2,
+        'variant' => 123,
+        'dimension1' => '',
+        'quantity' => 1
+    ])); ?>
+    </script>
+    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <? // END Code for component bitrix.ecommerce ?>
+```
 
 #### 4. Оформление заказа (checkoutOption)
 
-* На странице оформления заказа / оплаты заказа добавить **data-eproduct="checkoutOption"** для 
-контейнера, содержащего информацию о способе оплаты и доставке
-* Внутрь контейнера поместить HTML-код и передать значения в аттрибут value
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <input type="hidden" data-eproduct="option" value="">
-    <input type="hidden" data-eproduct="option2" value="">
-    <!--  END Code for component bitrix.ecommerce  -->
+* На странице оформления заказа / оплаты заказа добавить код
+```PHP
+<? // START Code for component bitrix.ecommerce
+    BitrixEcommerce::setEvent('checkoutOption');
+    BitrixEcommerce::addOptions('checkoutOption', [
+        'step' => 2,
+        'option' => '',
+        'option2' => '',
+    ]);
+// END Code for component bitrix.ecommerce ?>
 ```
 
 #### 5. Страница "Спасибо за покупку" (transaction)
 
-* На финальной странице оформления заказа разместить следующий HTML код и передать в него параметры заказа
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <div data-etype="transactionOrder">
-        <input type="hidden" data-eproduct="id" value="">
-        <input type="hidden" data-eproduct="affiliation" value="">
-        <input type="hidden" data-eproduct="revenue" value="">
-        <input type="hidden" data-eproduct="tax" value="">
-        <input type="hidden" data-eproduct="shipping" value="">
-    </div>
-     <!--  END Code for component bitrix.ecommerce  -->
+* На финальной странице оформления заказа добавить код
+```PHP
+<? // START Code for component bitrix.ecommerce
+    BitrixEcommerce::setEvent('transaction');
+    BitrixEcommerce::addOptions('transaction', [
+        'id' => $arResult['ORDER']['ID'],
+        'revenue' => $arResult['ORDER']['PRICE'],
+        'tax' => '0.00',
+        'shipping' => $arResult['ORDER']['PRICE_DELIVERY']
+    ]);
+// END Code for component bitrix.ecommerce ?>
 ```
-* Добавить HTML код для **каждого** товара из заказа и передать в него параметры товара
-```HTML
-    <!--  START Code for component bitrix.ecommerce  -->
-    <div data-etype="transactionProduct">
-        <input type="hidden" data-eproduct="id" value="">
-        <input type="hidden" data-eproduct="name" value="">
-        <input type="hidden" data-eproduct="price" value="">
-        <input type="hidden" data-eproduct="category" value="">
-        <input type="hidden" data-eproduct="brand" value="">
-        <input type="hidden" data-eproduct="variant" value="">
-        <input type="hidden" data-eproduct="dimension1" value="">
-        <input type="hidden" data-eproduct="quantity" value="">
-    </div>
-    <? endforeach; ?>
-    <!--  END Code for component bitrix.ecommerce  -->
+* В списке товаров для **каждого** товара разместить код и передать в него параметры
+```PHP
+    <script type="text/javascript">
+    <? // START Code for component bitrix.ecommerce
+    echo BitrixEcommerce::addProduct('impressions', new BxEcommerce\Product([
+        'id' => 123,
+        'name' => 'test',
+        'price' => 100.00,
+        'brand' => 1,
+        'category' => 2,
+        'variant' => 123,
+        'dimension1' => '',
+        'quantity' => 1
+    ])); ?>
+    </script>
+    <input type="hidden" name="eproduct_id" value="<?= $arResult['ID'] ?>">
+    <? // END Code for component bitrix.ecommerce ?>
 ```
 
 #### 6. Событие клика по товару (productClick)
 
-Внутри любого типа контейнера для всех ссылок перехода к детальной странице 
+Для всех ссылок перехода к детальной странице 
 товара добавить атрибут **data-eproduct-event="detail"**
 
 #### 7. Событие добавления товара в корзину (addToCart)
 
-Внутри любого типа контейнера для всех ссылок перехода к детальной странице 
+* Для всех ссылок перехода к детальной странице 
 товара добавить атрибут **data-eproduct-event="buy"**
+* Если на странице есть поле с количеством товара, добавить к нему атрибут **data-eproduct="quantity"**
 
 #### 8. Событие удаления товара из корзины (removeFromCart)
 
-Внутри любого типа контейнера для всех ссылок удаления товара из корзины 
+Для всех ссылок удаления товара из корзины 
 добавить атрибут **data-eproduct-event="remove_cart"**
 
 #### 8. Событие оформления заказа в один клик (transactionOneClick)
 
-Внутри любого типа контейнера для всех ссылок покупки в один клик (если есть) 
+Для всех ссылок покупки в один клик (если есть) 
 добавить атрибут **data-eproduct-event="oneclick_buy"**
