@@ -84,7 +84,7 @@ class BitrixEcommerce extends CBitrixComponent
     public static function addProduct($type, \BxEcommerce\Product $product)
     {
         global $bxEcommerce;
-        $lastProduct = end($bxEcommerce[$type]);
+        $lastProduct = end($bxEcommerce[$type]['products']);
 
         if (!empty($lastProduct)) {
             $product->position = $lastProduct->position + 1;
