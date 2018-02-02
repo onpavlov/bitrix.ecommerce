@@ -16,7 +16,7 @@
                     "impressions" : [
                         <? foreach ($arResult['ecommerce']['impressions']['products'] as $pos => $product) {
                             /* @var BxEcommerce\Product $product */
-                            echo json_encode($product->getProduct()) . ',';
+                            echo \Bitrix\Main\Web\Json::encode($product->getProduct()) . ',';
                         } ?>
                     ],
                 <? endif; ?>
@@ -28,7 +28,7 @@
                         "products" :
                         <?
                         /* @var BxEcommerce\Product $product */
-                        echo json_encode($product->getProduct()) . ',';
+                        echo \Bitrix\Main\Web\Json::encode($product->getProduct()) . ',';
                         ?>
                     },
                 <? endif; ?>
@@ -45,7 +45,7 @@
                         "products": [
                             <? foreach ($arResult['ecommerce']['checkout']['products'] as $pos => $product) {
                                 /* @var BxEcommerce\Product $product */
-                                echo json_encode($product->getFullProduct()) . ',';
+                                echo \Bitrix\Main\Web\Json::encode($product->getFullProduct()) . ',';
                             } ?>
                         ]
                     },
@@ -77,7 +77,7 @@
                             <? foreach ($arResult['ecommerce']['transaction']['products'] as $pos => $product)
                             {
                                 /* @var BxEcommerce\Product $product */
-                                echo json_encode($product->getFullProduct()) . ',';
+                                echo \Bitrix\Main\Web\Json::encode($product->getFullProduct()) . ',';
                             } ?>
                         ]
                     },

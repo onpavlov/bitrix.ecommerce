@@ -93,7 +93,7 @@ class BitrixEcommerce extends CBitrixComponent
         }
 
         $bxEcommerce[$type]['products'][] = $product;
-        return 'addProductItem(' . json_encode($product->getFullProduct()) . ');';
+        return 'addProductItem(' . \Bitrix\Main\Web\Json::encode($product->getFullProduct()) . ');';
     }
 
     /**
