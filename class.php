@@ -3,6 +3,7 @@
 use Bitrix\Currency\CurrencyManager;
 use Bitrix\Main\Loader;
 use Bitrix\Main\SiteTable;
+use Bitrix\Sale\Internals;
 
 class BitrixEcommerce extends CBitrixComponent
 {
@@ -16,6 +17,11 @@ class BitrixEcommerce extends CBitrixComponent
 
     private $modules = ['currency'];
 
+    /**
+     * @param $arParams
+     * @return array
+     * @throws \Bitrix\Main\LoaderException
+     */
     public function onPrepareComponentParams($arParams)
     {
         require_once __DIR__ . '/classes/Product.php';
@@ -121,5 +127,63 @@ class BitrixEcommerce extends CBitrixComponent
 
             $bxEcommerce['event'] = $event;
         }
+    }
+
+    /**
+     * @param int $orderId
+     * @return string
+     * @throws \Bitrix\Main\ArgumentException
+     * @throws \Bitrix\Main\LoaderException
+     */
+    public static function getTransactionOneClickCode($orderId = 0)
+    {
+        if (!$orderId) return '';
+
+        $modules = ['sale', 'iblock'];
+
+        foreach ($modules as $module) {
+            if (!Loader::includeModule($module)) {
+                die('Cannot include module ' . $module);
+            }
+        }
+
+        $object = new self();
+        $result = [];
+        $order = Internals\OrderTable::getById($orderId)->fetch();
+        $basketItems = Internals\BasketTable::getList(['filter' => ['ORDER_ID' => $orderId]]);
+
+        if (!empty($order)) {
+            $result['event'] = 'transactionOneClick';
+            $result['ecommerce']['purchase']['actionField'] = [
+                'id' => $order['ID'],
+                'affiliation' => $object->getAffiliation(),
+                'revenue' => $order['PRICE'],
+                'tax' => '0.00',
+                'shipping' => (float) $order['DELIVERY_PRICE']
+            ];
+        }
+
+        $pos = 0; $productsIds = [];
+
+        while ($basketItem = $basketItems->fetch()) {
+            $result['ecommerce']['purchase']['products'][] = [
+                'id' => $basketItem['PRODUCT_ID'],
+                'name' => $basketItem['NAME'],
+                'price' => $basketItem['PRICE'],
+                'variant' => $basketItem['PRODUCT_ID'],
+                'quantity' => $basketItem['QUANTITY'],
+                'position' => $pos,
+            ];
+            $pos++;
+            $productsIds[] = $basketItem['PRODUCT_ID'];
+        }
+
+        $products = \Bitrix\Iblock\ElementTable::getList(['filter' => ['ID' => $productsIds]]);
+
+        while ($product = $products->fetch()) {
+            echo "<pre>";print_r($product);echo "</pre>";
+        }
+
+        return 'dataLayer.push(' . json_encode($result) . ');';
     }
 }
