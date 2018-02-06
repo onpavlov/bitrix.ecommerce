@@ -86,6 +86,7 @@ class BitrixEcommerce extends CBitrixComponent
      * @param $type
      * @param \BxEcommerce\Product $product
      * @return string
+     * @throws \Bitrix\Main\ArgumentException
      */
     public static function addProduct($type, \BxEcommerce\Product $product)
     {
@@ -149,8 +150,8 @@ class BitrixEcommerce extends CBitrixComponent
 
         $object = new self();
         $result = [];
-        $order = Internals\OrderTable::getById($orderId)->fetch();
-        $basketItems = Internals\BasketTable::getList(['filter' => ['ORDER_ID' => $orderId]]);
+        $order = Bitrix\Sale\OrderTable::getById($orderId)->fetch();
+        $basketItems = Bitrix\Sale\BasketTable::getList(['filter' => ['ORDER_ID' => $orderId]]);
 
         if (!empty($order)) {
             $result['event'] = 'transactionOneClick';
@@ -161,34 +162,36 @@ class BitrixEcommerce extends CBitrixComponent
                 'tax' => '0.00',
                 'shipping' => (float) $order['DELIVERY_PRICE']
             ];
+
+            $pos = $i =  0; $productsIds = [];
+
+            while ($basketItem = $basketItems->fetch()) {
+                $result['ecommerce']['purchase']['products'][$pos] = [
+                    'id' => $basketItem['PRODUCT_ID'],
+                    'name' => $basketItem['NAME'],
+                    'price' => $basketItem['PRICE'],
+                    'variant' => $basketItem['PRODUCT_ID'],
+                    'quantity' => $basketItem['QUANTITY'],
+                    'position' => $pos,
+                    'brand' => '""'
+                ];
+                $pos++;
+                $productsIds[] = $basketItem['PRODUCT_ID'];
+            }
+
+            $products = \Bitrix\Iblock\ElementTable::getList([
+                'filter' => ['ID' => $productsIds],
+                'select' => ['ID', 'NAME', 'IBLOCK_SECTION.NAME']
+            ]);
+
+            while ($product = $products->fetch()) {
+                $result['ecommerce']['purchase']['products'][$i]['category'] = $product['IBLOCK_ELEMENT_IBLOCK_SECTION_NAME'];
+                $i++;
+            }
+
+            return 'dataLayer.push(' . \Bitrix\Main\Web\Json::encode($result) . ');';
         }
 
-        $pos = $i =  0; $productsIds = [];
-
-        while ($basketItem = $basketItems->fetch()) {
-            $result['ecommerce']['purchase']['products'][$pos] = [
-                'id' => $basketItem['PRODUCT_ID'],
-                'name' => $basketItem['NAME'],
-                'price' => $basketItem['PRICE'],
-                'variant' => $basketItem['PRODUCT_ID'],
-                'quantity' => $basketItem['QUANTITY'],
-                'position' => $pos,
-                'brand' => '""'
-            ];
-            $pos++;
-            $productsIds[] = $basketItem['PRODUCT_ID'];
-        }
-
-        $products = \Bitrix\Iblock\ElementTable::getList([
-            'filter' => ['ID' => $productsIds],
-            'select' => ['ID', 'NAME', 'IBLOCK_SECTION.NAME']
-        ]);
-
-        while ($product = $products->fetch()) {
-            $result['ecommerce']['purchase']['products'][$i]['category'] = $product['IBLOCK_ELEMENT_IBLOCK_SECTION_NAME'];
-            $i++;
-        }
-
-        return 'dataLayer.push(' . json_encode($result) . ');';
+        return '';
     }
 }

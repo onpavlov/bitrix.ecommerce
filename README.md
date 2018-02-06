@@ -166,3 +166,7 @@ BitrixEcommerce::setEvent('checkout'); ?>
 
 Для всех ссылок покупки в один клик (если есть) 
 добавить атрибут **data-eproduct-event="oneclick_buy"**
+
+Если покупка в 1 клик работает через AJAX, необходимо: либо вызвать JS-функцию **getTransactionOneClickCode(orderId);** 
+после успешного создания заказа, либо вызвать PHP-функцию 
+**BitrixEcommerce::getTransactionOneClickCode($orderId)**, обернув в тег javascript и передать в нее ID заказа.
