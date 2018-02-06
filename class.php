@@ -163,25 +163,30 @@ class BitrixEcommerce extends CBitrixComponent
             ];
         }
 
-        $pos = 0; $productsIds = [];
+        $pos = $i =  0; $productsIds = [];
 
         while ($basketItem = $basketItems->fetch()) {
-            $result['ecommerce']['purchase']['products'][] = [
+            $result['ecommerce']['purchase']['products'][$pos] = [
                 'id' => $basketItem['PRODUCT_ID'],
                 'name' => $basketItem['NAME'],
                 'price' => $basketItem['PRICE'],
                 'variant' => $basketItem['PRODUCT_ID'],
                 'quantity' => $basketItem['QUANTITY'],
                 'position' => $pos,
+                'brand' => '""'
             ];
             $pos++;
             $productsIds[] = $basketItem['PRODUCT_ID'];
         }
 
-        $products = \Bitrix\Iblock\ElementTable::getList(['filter' => ['ID' => $productsIds]]);
+        $products = \Bitrix\Iblock\ElementTable::getList([
+            'filter' => ['ID' => $productsIds],
+            'select' => ['ID', 'NAME', 'IBLOCK_SECTION.NAME']
+        ]);
 
         while ($product = $products->fetch()) {
-            echo "<pre>";print_r($product);echo "</pre>";
+            $result['ecommerce']['purchase']['products'][$i]['category'] = $product['IBLOCK_ELEMENT_IBLOCK_SECTION_NAME'];
+            $i++;
         }
 
         return 'dataLayer.push(' . json_encode($result) . ');';
