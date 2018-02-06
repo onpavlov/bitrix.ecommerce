@@ -3,9 +3,7 @@
 <? if ($arParams['mode'] !== 'ajax') $this->SetViewTarget('bitrix_ecommerce'); ?>
     <!--  START Code for component bitrix.ecommerce  -->
     <script type="text/javascript" id="bx_ecommerce">
-        BX.message({
-            TEMPLATE_PATH: '<?= $this->GetFolder(); ?>'
-        });
+        window.bxEcommerceTemplatePath = '<?= $this->GetFolder(); ?>';
 
         <? if (!empty($arResult['ecommerce'])): ?>
         window.dataLayer = (window.dataLayer || []);

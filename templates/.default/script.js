@@ -15,7 +15,7 @@ function getTransactionOneClickCode(orderId) {
     if (orderId === 0) return;
 
     $.get(
-        BX.message('TEMPLATE_PATH') + '/ajax/getTransactionOneClickCode.php',
+        window.bxEcommerceTemplatePath + '/ajax/getTransactionOneClickCode.php',
         { 'orderId' : orderId },
         function (response) {
             if (response.success) {
